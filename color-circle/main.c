@@ -20,28 +20,29 @@ void render_pattern() {
   int y;
   int hx;
   int hy;
-  int d;
+  float d;
   float ang;
 
   /* draw pattern into screen buffer */
   SDL_LockSurface( screen );
   p = screen->pixels;
   
-  for(y = 0; y < 480; y++) 
+  for(y = 0; y < 480; y++)
     for(x = 0; x < 640; x++) {
 
       hx = x - 320;
       hy = y - 240;
 
       d = sqrt(hx*hx + hy*hy);
-      if( d < 100 || d > 200) continue;
+      if( d > 100 && d < 200) {
 
-      ang = 0.25 + 0.25 * (hy / sqrt( hx*hx + hy*hy ));
-      if(hx < 0) ang = 1.0 - ang;
+        ang = 0.25 + 0.25 * (hy / d);
+        if(hx < 0) ang = 1.0 - ang; 
 
+        *p = ang * 255;
+      }
 
-
-      p[y*640 + x] = ang * 255;
+      p++;
     }
   
   SDL_UnlockSurface( screen );
