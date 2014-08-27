@@ -4,27 +4,40 @@
 #include <SDL/SDL.h>
 #include <math.h>
 
-#define NUM_POINTS 5
+#define NUM_LINES 20
 
 typedef unsigned char byte;
 typedef byte* pbyte;
 
-typedef struct _S_POLY_POINT {
+typedef struct _S_POINT {
   float x;
   float y;
   float x_inc;
   float y_inc;
+} T_POINT, *PT_POINT;
 
-  struct _S_POLY_POINT *next;
-} T_POLY_POINT, *PT_POLY_POINT;
+typedef struct _S_LINE {
+  T_POINT p1;
+  T_POINT p2;
+} T_LINE, *PT_LINE;
 
-
+PT_LINE lines = NULL;
 SDL_Surface *screen = NULL;
-
-PT_POLY_POINT points;
 
 inline double frand() {
   return (double)rand() / (double)RAND_MAX;
+}
+
+void randomize_inc( PT_POINT p ) {
+
+  p->x_inc = 1 - 2.0 * frand();
+  p->y_inc = 1 - 2.0 * frand();
+}
+
+void randomize_pos( PT_POINT p ) {
+  
+  p->x = frand() * 640;
+  p->y = frand() * 480; 
 }
 
 /*
@@ -39,35 +52,40 @@ inline double frand() {
  *   draw same lines with box clipping to small rectangle in white
  */
 
-void draw_line( pbyte p, byte c, int x1, int y1, int x2, int y2 ) {
+void draw_line( pbyte p, byte c, PT_LINE l, int minx, int miny, int maxx, int maxy ) {
 
+  int x1 = l->p1.x;
+  int x2 = l->p2.x;
+  int y1 = l->p1.y;
+  int y2 = l->p2.y;
   int dx, dy;
   int sx, sy;
   int err, err2;
 
-#if 0
+  float r;
+
   if( x1 == x2 ) {
-    if( x1 < 0 || x1 > 639 ) return;
+    if( x1 < minx || x1 > maxx ) return;
 
     if( y2 < y1 ) {
-      y  = y2;
+      dy = y2;
       y2 = y1;
-      y1 = y;
+      y1 = dy;
     }
 
-    if( y1 < 0) {
-      if(y2 < 0) return;
-      y1 = 0;
+    if( y1 < miny) {
+      if(y2 < miny) return;
+      y1 = miny;
     }
-    if(y2 > 479) {
-      if(y1 > 479) return;
-      y2 = 479;
+    if(y2 > maxy) {
+      if(y1 > maxy) return;
+      y2 = maxy;
     }
 
     p += (y1 * 640) + x1;
-    y = y2 - y1;
-    while(y) {
-      y--;
+    dy = y2 - y1;
+    while(dy) {
+      dy--;
       *p = c;
     }
 
@@ -75,22 +93,22 @@ void draw_line( pbyte p, byte c, int x1, int y1, int x2, int y2 ) {
   }
 
   if( y1 == y2 ) {
-    if( y1 < 0 || y1 > 479 ) return;
+    if( y1 < miny || y1 > maxy ) return;
 
     if( x2 < x1 ) {
-      x  = x2;
+      dx = x2;
       x2 = x1;
-      x1 = x;
+      x1 = dx;
     }
 
-    if( x1 < 0 ) {
-      if( x2 < 0 ) return;
-      x1 = 0;
+    if( x1 < minx ) {
+      if( x2 < minx ) return;
+      x1 = minx;
     }
 
-    if( x2 > 639) {
-      if( x1 > 639 ) return;
-      x2 = 639;
+    if( x2 > maxx) {
+      if( x1 > maxx ) return;
+      x2 = maxx;
     }
 
     /* should use memset */
@@ -100,10 +118,53 @@ void draw_line( pbyte p, byte c, int x1, int y1, int x2, int y2 ) {
 
     return; 
   }
-#endif
+
+  //TODO... edge boundary clipping...
 
   dx = abs(x2 - x1);
   dy = abs(y2 - y1); 
+
+  r = (float)dx / (float)dy;
+
+  printf( "preclip\n");
+  printf( "  x1=%d\n", x1 );
+  printf( "  y1=%d\n", y1 );
+  printf( "  x2=%d\n", x2 );
+  printf( "  y2=%d\n", y2 );
+  printf( "   r=%f\n", r );
+  
+
+  if( x1 < minx ) {
+    dx  = minx - x1;
+    y1 += r * dx;
+    x1  = minx;
+  }
+
+  if( x2 > maxx ) {
+    dx  = x2 - maxx;
+    y2 -= r * dx;
+    x2  = maxx;
+  }
+
+/*   if( y1 < miny ) {
+ *     dy  = miny - y1;
+ *     x1 += r * dy;
+ *     y1  = miny;
+ *   }
+ * 
+ *   if( y2 > maxy ) {
+ *     dy  = y2 - maxy;
+ *     x2 -= r * dy;
+ *     y2  = maxy;
+ *   }
+ */
+
+  printf( "postclip\n" );
+  printf( "  x1=%d\n", x1 );
+  printf( "  y1=%d\n", y1 );
+  printf( "  x2=%d\n", x2 );
+  printf( "  y2=%d\n", y2 );
+
 
   sx = (x1 < x2) ? 1 : -1;
   sy = (y1 < y2) ? 1 : -1;
@@ -123,73 +184,79 @@ void draw_line( pbyte p, byte c, int x1, int y1, int x2, int y2 ) {
   } 
 }
 
-void move_point( PT_POLY_POINT p ) {
+void move_point( PT_POINT p ) {
 
+  p->x += p->x_inc;
+  p->y += p->y_inc;
 
+  if(p->x < 1 || p->x > 639 ) {
+    p -> x_inc = -(p -> x_inc);
+    p -> y_inc = frand();
+  }
+
+  if( p->y < 0 || p->y > 479 ) { 
+    p -> y_inc = -(p -> y_inc);
+    p -> x_inc = frand();
+  }
+
+}
+
+void move_stuff() { 
+
+  int i;
+
+  for(i = 0; i < NUM_LINES; i++) {
+
+    move_point( &lines[i].p1 );
+    move_point( &lines[i].p2 ); 
+  }
 }
 
 void do_stuff() {
 
-  int x;
-  int y;
-  
-  PT_POLY_POINT first = points;
-  PT_POLY_POINT p = points;
-
+  int i;
+  PT_LINE l;
   pbyte pixels;
 
   SDL_LockSurface( screen );
-  pixels = (pbyte)screen->pixels;
+  pixels = (pbyte)screen->pixels; 
 
-  //draw_line( pixels, 255, 320, 240, x, y );
+  for(i = 0; i < NUM_LINES; i++) {
 
+    l = &lines[i];
 
-  SDL_UnlockSurface( screen );
-
-
-}
-
-PT_POLY_POINT alloc_point() {
-
-  PT_POLY_POINT p = (PT_POLY_POINT)calloc(1, sizeof(T_POLY_POINT));
-  if(!p) {
-    perror("alloc'ing points");
-    exit(-1);
+    draw_line( pixels, 100, l,   0,   0, 639, 479 );
+    draw_line( pixels, 255, l, 160, 120, 479, 359 );
   }
 
-  return p;
+  SDL_UnlockSurface( screen );
 }
 
 void init_stuff() {
 
   int i;
-  PT_POLY_POINT p;
 
-  points = p = alloc_point();
+  lines = (PT_LINE)calloc( NUM_LINES, sizeof( T_LINE ));
+  if(!lines) {
+    perror("could not allocate lines");
+    exit(-1);
+  }
 
-  for(i = 0; i < NUM_POINTS; i++) {
-    
-    p->x = rand() % 640;
-    p->y = rand() % 480;
-    p->x_inc = 2 - 4 * frand();
-    p->y_inc = 2 - 4 * frand();
+  for(i = 0; i < NUM_LINES; i++) {
 
-    p->next = alloc_point();
-    p = p->next;
+    randomize_pos( &lines[i].p1 );
+    randomize_inc( &lines[i].p1 );
+
+    randomize_pos( &lines[i].p2 );
+    randomize_inc( &lines[i].p2 );
   } 
 }
 
 void cleanup() {
-  PT_POLY_POINT  p = points;
-  PT_POLY_POINT pp;
 
   SDL_Quit();
 
-  while(p) {
-    pp = p;
-    p = p->next;
-    free(pp); 
-  }
+  if(lines) free(lines);
 }
 
 void init() {
@@ -245,11 +312,13 @@ int main( int argc, char** argv ) {
 
     SDL_FillRect( screen, NULL, 0 );
 
+    move_stuff();
+
     do_stuff();
 
     SDL_Flip( screen );
 
-    SDL_Delay( 50 );
+    SDL_Delay( 20 );
   }
 
   return 0;
