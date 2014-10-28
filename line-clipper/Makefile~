@@ -1,0 +1,15 @@
+
+EXE=lines
+CC=gcc
+LIBS=-lglfw -lGL -lm
+FLAGS=-Wall
+
+OBJ=main.o line.o
+
+all: $(OBJ)
+	$(CC) $(OBJ) $(FLAGS) $(LIBS) -o $(EXE)
+
+.c.o:
+	$(CC) $(FLAGS) -c $< -o $@
+
+
