@@ -3,6 +3,7 @@
 
 #include <vector>
 
+#include "util.hh"
 #include "point.hh"
 
 class LineLoop {
@@ -17,6 +18,6 @@ public:
 
   void move();
 
-  void draw();
+  void draw(byte);
 };
 

@@ -1,7 +1,7 @@
 
 GPP=g++
 CFLAGS=-Wall -g
-LIBS=-lSDL
+LIBS=-lSDL -lm
 EXE=poly-lines
 
 OBJECTS=\
@@ -16,3 +16,7 @@ all: $(OBJECTS)
 
 .cc.o:
 	$(GPP) -c $< -o $@ $(CFLAGS)
+
+clean:
+	rm -f $(OBJECTS)
+	rm -f $(EXE)

@@ -1,4 +1,6 @@
 
+#include <math.h>
+
 #include "util.hh"
 
 enum {
@@ -51,7 +53,12 @@ static void render_line( int x1, int y1, int x2, int y2, byte c ) {
   } 
 }
 
-#define dist( a, b, c, d ) ( (c-a * c-a) + (d-b * d-b) )
+inline float dist( float x1, float y1, float x2, float y2 ) {
+  float dx = x2 - x1;
+  float dy = y2 - y1;
+
+  return sqrt( dx * dx + dy * dy ); 
+}
 
 static int clip_line( int x1, int y1, int x2, int y2, int *ox1, int *oy1, int *ox2, int *oy2 ) {
 
@@ -158,7 +165,7 @@ static int clip_line( int x1, int y1, int x2, int y2, int *ox1, int *oy1, int *o
       nx2 = max_x - 1;
       ny2 = y1 - s1 * d2;
 
-      if( dist(nx1, ny1, x2, y2) > dist(nx2, ny2, x2, y2) ) {
+      if( dist(nx1, ny1, x2, y2) < dist(nx2, ny2, x2, y2) ) {
         x1 = nx1;
         y1 = ny1;
       } else {
@@ -186,7 +193,7 @@ static int clip_line( int x1, int y1, int x2, int y2, int *ox1, int *oy1, int *o
       nx1 = x1 + s2 * d2;
       ny1 = max_y - 1;
 
-      if( dist(nx1, ny1, x2, y2) > dist(nx2, ny2, x2, y2) ) {
+      if( dist(nx1, ny1, x2, y2) < dist(nx2, ny2, x2, y2) ) {
         x1 = nx1;
         y1 = ny1;
       } else {
@@ -287,7 +294,7 @@ static int clip_line( int x1, int y1, int x2, int y2, int *ox1, int *oy1, int *o
       nx2 = max_x - 1;
       ny2 = y2 - s1 * d2;
 
-      if( dist(nx1, ny1, x1, y1) > dist(nx2, ny2, x1, y1) ) {
+      if( dist(nx1, ny1, x1, y1) < dist(nx2, ny2, x1, y1) ) {
         x2 = nx1;
         y2 = ny1;
       } else {
@@ -315,7 +322,7 @@ static int clip_line( int x1, int y1, int x2, int y2, int *ox1, int *oy1, int *o
       nx1 = x2 + s2 * d2;
       ny1 = max_y - 1;
 
-      if( dist(nx1, ny1, x1, y1) > dist(nx2, ny2, x1, y1) ) {
+      if( dist(nx1, ny1, x1, y1) < dist(nx2, ny2, x1, y1) ) {
         x2 = nx1;
         y2 = ny1;
       } else {
@@ -350,8 +357,6 @@ static int clip_line( int x1, int y1, int x2, int y2, int *ox1, int *oy1, int *o
 
 void draw_line( int x1, int y1, int x2, int y2, byte c ) {
 
-  clip_line( x1, y1, x2, y2, 
-      &x1, &y1, &x2, &y2 );
-
-  render_line( x1, y1, x2, y2, c ); 
+  if(clip_line( x1, y1, x2, y2, &x1, &y1, &x2, &y2 )) 
+    render_line( x1, y1, x2, y2, c ); 
 }

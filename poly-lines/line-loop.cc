@@ -20,7 +20,7 @@ void LineLoop::move() {
     it->move(); 
 }
 
-void LineLoop::draw() { 
+void LineLoop::draw(byte c) { 
 
   int start_x = m_points[0].ix();
   int start_y = m_points[0].iy();
@@ -29,12 +29,12 @@ void LineLoop::draw() {
 
   for( int i = 1; i < m_points.size(); i++ ) {
 
-    draw_line( pre_x, pre_y, m_points[i].ix(), m_points[i].iy(), 255 );
+    draw_line( pre_x, pre_y, m_points[i].ix(), m_points[i].iy(), c );
 
     pre_x = m_points[i].ix();
     pre_y = m_points[i].iy(); 
   }
 
-  draw_line( pre_x, pre_y, start_x, start_y, 255 );
+  draw_line( pre_x, pre_y, start_x, start_y, c );
   
 }
