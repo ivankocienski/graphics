@@ -1,4 +1,8 @@
 
+#include <stdio.h>
+#include <GL/gl.h>
+#include <math.h>
+
 enum {
   C_LEFT  = 8, // 1000
   C_RIGHT = 4, // 0100
@@ -18,9 +22,18 @@ void setup_line_clipper( int minx, int miny, int maxx, int maxy ) {
   max_y = maxy;
 }
 
-#define dist( a, b, c, d ) ( (c-a * c-a) + (d-b * d-b) )
+//#define dist( a, b, c, d ) sqrt( (c-a * c-a) + (d-b * d-b) )
+
+float dist( float x1, float y1, float x2, float y2 ) {
+  float dx = x2 - x1;
+  float dy = y2 - y1;
+
+  return sqrt( dx * dx + dy * dy ); 
+}
 
 int clip_line( int x1, int y1, int x2, int y2, int *ox1, int *oy1, int *ox2, int *oy2 ) {
+
+  static unsigned char blink = 0;
 
   char clip_a = 0;
   char clip_b = 0;
@@ -51,8 +64,10 @@ int clip_line( int x1, int y1, int x2, int y2, int *ox1, int *oy1, int *ox2, int
   int d1;
   int d2;
   
+  blink++;
+
   switch( clip_a ) {
-    case C_LEFT | C_UP: //okay
+    case C_LEFT | C_UP: 
       
       //up
       d1 = min_y - y1;
@@ -64,6 +79,7 @@ int clip_line( int x1, int y1, int x2, int y2, int *ox1, int *oy1, int *ox2, int
       nx2 = min_x;
       ny2 = y1 + s1 * d2;
 
+      
       if( dist(nx1, ny1, x2, y2) < dist(nx2, ny2, x2, y2) ) {
         x1 = nx1;
         y1 = ny1;
@@ -79,9 +95,9 @@ int clip_line( int x1, int y1, int x2, int y2, int *ox1, int *oy1, int *ox2, int
       x1 = min_x;
       break;
 
-    case C_LEFT | C_DOWN: // okay
+    case C_LEFT | C_DOWN:
 
-      // dpwn
+      // down
       d1 = max_y - y1;
       nx1 = x1 + s2 * d1;
       ny1 = max_y - 1;
@@ -91,13 +107,39 @@ int clip_line( int x1, int y1, int x2, int y2, int *ox1, int *oy1, int *ox2, int
       nx2 = min_x;
       ny2 = y1 + s1 * d2;
 
+      glLineWidth(5); 
+      glBegin(GL_LINES);
+
+      if( ((blink >> 2) & 63) < 31 ) {
+
+        glColor3f( 1, 0.3, 0.3 );
+        glVertex2f(nx2, ny2);
+        glVertex2f(x2, y2);
+
+      } else {
+
+        glColor3f( 0.3, 0.3, 1 );
+        glVertex2f(nx1, ny1);
+        glVertex2f(x2, y2);
+      }
+
+      glEnd(); 
+      glLineWidth(1);
+
+
+      dx = nx1 - x2;
+      dy = ny1 - y2;
+
+
       if( dist(nx1, ny1, x2, y2) < dist(nx2, ny2, x2, y2) ) {
         x1 = nx1;
-        y1 = ny1;
+        y1 = ny1; 
+
       } else {
         x1 = nx2;
         y1 = ny2;
       }
+
 
       break;
 
@@ -125,13 +167,21 @@ int clip_line( int x1, int y1, int x2, int y2, int *ox1, int *oy1, int *ox2, int
       nx2 = max_x - 1;
       ny2 = y1 - s1 * d2;
 
-      if( dist(nx1, ny1, x2, y2) > dist(nx2, ny2, x2, y2) ) {
+
+
+
+      if( dist(nx1, ny1, x2, y2) < dist(nx2, ny2, x2, y2) ) {
         x1 = nx1;
         y1 = ny1;
+
+
       } else {
+
         x1 = nx2;
         y1 = ny2;
+
       }
+
 
       break;
 
@@ -153,7 +203,7 @@ int clip_line( int x1, int y1, int x2, int y2, int *ox1, int *oy1, int *ox2, int
       nx1 = x1 + s2 * d2;
       ny1 = max_y - 1;
 
-      if( dist(nx1, ny1, x2, y2) > dist(nx2, ny2, x2, y2) ) {
+      if( dist(nx1, ny1, x2, y2) < dist(nx2, ny2, x2, y2) ) {
         x1 = nx1;
         y1 = ny1;
       } else {
@@ -254,7 +304,7 @@ int clip_line( int x1, int y1, int x2, int y2, int *ox1, int *oy1, int *ox2, int
       nx2 = max_x - 1;
       ny2 = y2 - s1 * d2;
 
-      if( dist(nx1, ny1, x1, y1) > dist(nx2, ny2, x1, y1) ) {
+      if( dist(nx1, ny1, x1, y1) < dist(nx2, ny2, x1, y1) ) {
         x2 = nx1;
         y2 = ny1;
       } else {
@@ -282,7 +332,7 @@ int clip_line( int x1, int y1, int x2, int y2, int *ox1, int *oy1, int *ox2, int
       nx1 = x2 + s2 * d2;
       ny1 = max_y - 1;
 
-      if( dist(nx1, ny1, x1, y1) > dist(nx2, ny2, x1, y1) ) {
+      if( dist(nx1, ny1, x1, y1) < dist(nx2, ny2, x1, y1) ) {
         x2 = nx1;
         y2 = ny1;
       } else {

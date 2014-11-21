@@ -40,20 +40,24 @@ void do_stuff() {
   glEnd();
 
 
-  glColor3f( 0.5, 0, 0 );
   glBegin(GL_LINES);
+
+  glColor3f( 0.5, 0, 0 );
   glVertex2f( line_x1, line_y1 );
   glVertex2f( line_x2, line_y2 );
+
   glEnd();
 
   if( clip_line( line_x1, line_y1, line_x2, line_y2, &x1, &y1, &x2, &y2 ) ) {
 
-    glColor3f( 0, 1, 0 );
     glBegin(GL_LINES);
+    glColor3f( 0, 1, 0 );
     glVertex2f( x1, y1 );
     glVertex2f( x2, y2 );
     glEnd();
   }
+
+
 }
 
 void init_stuff() {
@@ -68,6 +72,8 @@ void init_stuff() {
 
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
+
+  glEnable( GL_LINE_SMOOTH );
   
   glClearColor(0.0, 0.0, 0.0, 0.0);
 }
